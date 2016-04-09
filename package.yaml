@@ -27,3 +27,4 @@ library:
 
 dependencies:
   - base == 4.*
+  - random

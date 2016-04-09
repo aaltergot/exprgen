@@ -1,6 +1,5 @@
 module Expr 
   ( Op (A, M, D)
-  , succOp
   , succOps
   , Expr (Expr, Val)
   , eval
@@ -8,25 +7,33 @@ module Expr
   , ef
   ) where
 
+import System.Random
+
 data Op = A -- Add
         | M -- Multiply
         | D -- Divide
-        deriving (Eq)
+        deriving (Eq, Enum, Bounded)
 
 instance Show Op where
   show A = "+"
   show M = "*"
   show D = "/"
 
-succOp :: Op -> Op
-succOp A = M
-succOp M = D
-succOp D = A
+instance Random Op where
+  randomR (a, b) gen = 
+    let (i, newGen) = randomR (fromEnum a, fromEnum b) gen 
+     in (toEnum i, newGen)
+  random gen = 
+    let min = fromEnum (minBound :: Op)
+        max = fromEnum (maxBound :: Op)
+        (i, newGen) = randomR (min, max) gen 
+     in (toEnum i, newGen)
 
 succOps :: [Op] -> [Op]
 succOps [] = []
-succOps (D:ops) = A : succOps ops
-succOps (op:ops) = succOp op : ops
+succOps (op:ops) 
+  | op == maxBound = minBound : succOps ops
+  | otherwise = succ op : ops
 
 opFun :: (Real a, Fractional a) => Op -> a -> a -> a
 opFun A = (+)
