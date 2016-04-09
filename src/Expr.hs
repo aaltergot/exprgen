@@ -39,7 +39,11 @@ opPrec M = 3
 opPrec D = 3
 
 data Expr a = Val a 
-            | Expr (Expr a) (Expr a) deriving (Show)
+            | Expr (Expr a) (Expr a)
+
+instance (Show a) => Show (Expr a) where
+  show (Val a) = show a
+  show (Expr l r) = "(" ++ show l ++ " " ++ show r ++ ")"
 
 nodeCnt :: Expr a -> Int
 nodeCnt (Expr l r)  = 1 + nodeCnt l + nodeCnt r

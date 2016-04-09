@@ -4,6 +4,15 @@ maintainer: Alexander Altergot <avaltergot@gmail.com>
 license: OtherLicense 
 github: aaltergot/exprgen
 
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - hspec
+      - exprgen
+
 executables:
   exprgen:
     main: Main.hs
