@@ -1,28 +1,16 @@
 module Main where
 
+import Expr
+
 main :: IO ()
-main = do
-  putStrLn "hello world"
+main = putStrLn "hello world"
+
+exp1 = ef (Expr (Val 2) (Expr (Val 3) (Val 4))) [M, A]
+exp2 = ef (Expr (Expr (Val 5) (Val 13)) (Expr (Val (-2)) (Expr (Val 1) (Expr (Val 4) (Val (-3)))))) [D, A, A, M, A]
+exp3 = ef (Expr (Val 5) (Expr (Val 6) (Val 7))) [A, M]
+exp4 = ef (Expr (Val 5) (Val (-2))) [M]
+exp5 = ef (Expr (Val (-2)) (Val 5)) [M]
 
 
-data Op = A -- Add
-        | M -- Multiply
-        | D -- Divide
-        deriving (Show, Eq)
 
-succOp :: Op -> Op
-succOp A = M
-succOp M = D
-succOp _ = A
 
-succOps :: [Op] -> [Op]
-succOps [] = []
-succOps (op:ops) = let next = succOp op
-                    in next:(if next == A then succOps ops else ops)
-
-data Expr a = Val a 
-            | Expr (Expr a) (Expr a) deriving (Show)
-
-nodeCnt :: Expr a -> Int
-nodeCnt (Expr l r)  = 1 + nodeCnt l + nodeCnt r
-nodeCnt _ = 0
