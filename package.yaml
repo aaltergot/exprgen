@@ -15,9 +15,11 @@ tests:
 
 executables:
   exprgen:
-    main: Main.hs
+    main: exprgen.hs
     source-dirs:
-      - src
+      - exe
+    dependencies:
+      - exprgen
 
 library:
   source-dirs:

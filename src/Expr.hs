@@ -21,12 +21,12 @@ instance Show Op where
 succOp :: Op -> Op
 succOp A = M
 succOp M = D
-succOp _ = A
+succOp D = A
 
 succOps :: [Op] -> [Op]
 succOps [] = []
-succOps (op:ops) = let next = succOp op
-                    in next:(if next == A then succOps ops else ops)
+succOps (D:ops) = A : succOps ops
+succOps (op:ops) = succOp op : ops
 
 opFun :: (Real a, Fractional a) => Op -> a -> a -> a
 opFun A = (+)
@@ -51,16 +51,13 @@ nodeCnt _ = 0
 
 eval :: (Real a, Real b, Fractional b) => Expr a -> [Op] -> b
 eval (Val x) _ = realToFrac x
-eval (Expr l r) (op:ops) = let (lops, rops) = splitAt (nodeCnt l) ops
-                            in opFun op (eval l lops) (eval r rops)
+eval (Expr l r) (op:ops) = 
+  let (lops, rops) = splitAt (nodeCnt l) ops
+   in opFun op (eval l lops) (eval r rops)
 
 format :: (Show a, Real a, Ord a) => Expr a -> [Op] -> String
-format (Val x) _ = 
-  let s = show x 
-   in if x < 0 then "(" ++ s ++ ")" else s
-format (Expr l r) (op:ops) = 
-  let (lops, rops) = splitAt (nodeCnt l) ops
-   in formatInner op l lops ++ show op ++ formatInner op r rops
+format (Val x) _ = show x
+format e ops = formatInner A e ops
 
 formatInner :: (Show a, Real a, Ord a) => Op -> Expr a -> [Op] -> String
 formatInner _ (Val x) _ = 
