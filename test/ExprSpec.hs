@@ -27,13 +27,13 @@ expr11 =
 spec :: Spec
 spec = do
 
-  describe ("Succ ops1: " ++ show ops1) $ do
+  describe ("Ops1: " ++ show ops1) $ do
     it "succeeded correctly" $ do (succOps ops1) `shouldBe` [M, A, A]
 
-  describe ("Succ ops2: " ++ show ops2) $ do
+  describe ("Ops2: " ++ show ops2) $ do
     it "succeeded correctly" $ do (succOps ops2) `shouldBe` [A, A, A]
 
-  describe ("Succ ops3: " ++ show ops3) $ do
+  describe ("Ops3: " ++ show ops3) $ do
     it "succeeded correctly" $ do (succOps ops3) `shouldBe` [A, A, M]
 
   describe ("Expr1: " ++ eshow expr1) $ do
