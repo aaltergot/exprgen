@@ -23,11 +23,7 @@ instance Random Op where
   randomR (a, b) gen = 
     let (i, newGen) = randomR (fromEnum a, fromEnum b) gen 
      in (toEnum i, newGen)
-  random gen = 
-    let min = fromEnum (minBound :: Op)
-        max = fromEnum (maxBound :: Op)
-        (i, newGen) = randomR (min, max) gen 
-     in (toEnum i, newGen)
+  random gen = randomR (minBound :: Op, maxBound :: Op) gen 
 
 succOps :: [Op] -> [Op]
 succOps [] = []
