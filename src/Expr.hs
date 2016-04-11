@@ -62,7 +62,7 @@ format :: (Show a, Real a, Ord a) => Expr a -> [Op] -> String
 format (Val x) _ = show x
 format e ops = formatInner A e ops
 
-formatInner :: (Show a, Real a, Ord a) => Op -> Expr a -> [Op] -> String
+formatInner :: (Show a, Real a) => Op -> Expr a -> [Op] -> String
 formatInner _ (Val x) _ = 
   let s = show x 
    in if x < 0 then "(" ++ s ++ ")" else s
