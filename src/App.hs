@@ -92,7 +92,6 @@ translateException (MalformedSeed msg) v =
 asReason :: Text -> Text
 asReason = append "\nReason: "
 
-
 withFile :: FilePath 
          -> IOMode 
          -> (Handle -> ExceptT Exception IO r) 
@@ -163,8 +162,8 @@ app :: IO ()
 app = do
   argv <- getArgs
   case getOpt Permute flags argv of
-    (_, _, errs) | not $ null errs -> (do hPutStrLn stderr (concat errs ++ usagePage)
-                                          exitFailure)
+    (_, _, errs) | not $ null errs -> do hPutStrLn stderr (concat errs ++ usagePage)
+                                         exitFailure
     (args, values, []) -> do
       when (Help `elem` args) (do putStrLn usagePage
                                   exitSuccess)
@@ -182,6 +181,7 @@ app = do
         return $ evalState (genExpr config) gen
       case result of 
         Right expr -> putStrLn $ unpack expr
-        Left ex -> (do hPutStrLn stderr $ unpack $ translateException ex verbose +++
-                         if not verbose then "\nTry \"--verbose\" for more info." else ""
-                       exitFailure)
+        Left ex -> do hPutStrLn stderr $ unpack $ 
+                        translateException ex verbose ++? not verbose $
+                          "\nTry \"--verbose\" for more info."
+                      exitFailure

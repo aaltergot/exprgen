@@ -46,7 +46,7 @@ genExpr :: (RandomGen g) => ExprGenConfig -> State g Text
 genExpr config = do
   literals <- randomLiterals config
   expr <- randomExpr literals
-  ops <- randomOps $ (getN config) - 1
+  ops <- randomOps $ getN config - 1
   let m = realToFrac $ getM config
       check ops = let res = eval expr ops in res <= m && res >= -m
       goodOps = succOpsUntil check ops

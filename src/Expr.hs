@@ -26,7 +26,7 @@ instance Random Op where
   randomR (a, b) gen = 
     let (i, newGen) = randomR (fromEnum a, fromEnum b) gen 
      in (toEnum i, newGen)
-  random gen = randomR (minBound :: Op, maxBound :: Op) gen 
+  random = randomR (minBound :: Op, maxBound :: Op)
 
 (+++) :: Text -> Text -> Text
 (+++) = append
@@ -74,7 +74,7 @@ formatInner _ (Val x) _ =
    in if x < 0 then "(" +++ s +++ ")" else s
 formatInner pop (Expr l r) (op:ops) = 
   let (lops, rops) = splitAt (nodeCnt l) ops
-      needP = (opPrec pop) < (opPrec op) 
+      needP = opPrec pop < opPrec op 
    in (if needP then "(" else "") +++ 
      (case l of 
        Val lv | lv < 0 && op == A -> pack $ show lv
@@ -82,7 +82,7 @@ formatInner pop (Expr l r) (op:ops) =
      ) +++ 
        (case r of
           Val rv | rv < 0 && op == A -> pack $ show rv
-          _ -> (pack $ show op) +++ (formatInner op r rops)
+          _ -> pack (show op) +++ formatInner op r rops
        ) +++ (if needP then ")" else "")
 
 ef :: (Show a, Real a, Real b, Fractional b) => Expr a -> [Op] -> (b, Text)
