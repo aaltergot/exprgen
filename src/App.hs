@@ -68,6 +68,9 @@ usageHeader = "Usage: exprgen --file=/path/to/file [--seed=<S>]\n" ++
               "       \"--file\" option has precedence over \"--num\"+\"--mod\"\n" ++
               "       Input file contains <N> on first line, <M> on second\n" 
 
+usagePage :: String
+usagePage = usageInfo usageHeader flags
+
 translateException :: Exception -> Bool -> Text
 translateException (Exception msg) _ =
   "Execution failure: " +++ msg
@@ -160,8 +163,11 @@ app :: IO ()
 app = do
   argv <- getArgs
   case getOpt Permute flags argv of
-    (_, _, errs) | not $ null errs -> putStrLn (concat errs ++ usageInfo usageHeader flags)
+    (_, _, errs) | not $ null errs -> (do hPutStrLn stderr (concat errs ++ usagePage)
+                                          exitFailure)
     (args, values, []) -> do
+      when (Help `elem` args) (do putStrLn usagePage
+                                  exitSuccess)
       let verbose = Verbose `elem` args
       unless (null values) (putStrLn $ "Unrecognized arguments: " ++ show values)
       result <- runExceptT $ do
@@ -174,8 +180,8 @@ app = do
         gen <- fmap mkStdGen <$> exceptIO (lookupSeed args) >>= (liftIO . maybe newStdGen return)
         when verbose $ liftIO $ putStrLn $ "Generator: " ++ show gen
         return $ evalState (genExpr config) gen
-      putStrLn $ 
-        case result of 
-          Right expr -> unpack expr
-          Left ex -> unpack $ translateException ex verbose +++
-                       if not verbose then "\nTry \"--verbose\" for more info." else ""
+      case result of 
+        Right expr -> putStrLn $ unpack expr
+        Left ex -> (do hPutStrLn stderr $ unpack $ translateException ex verbose +++
+                         if not verbose then "\nTry \"--verbose\" for more info." else ""
+                       exitFailure)
