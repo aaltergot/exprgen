@@ -1,45 +1,53 @@
-module ExprGen where
+module ExprGen 
+  ( ExprGenConfig(..)
+  , genExpr
+  ) where
 
-import Expr
-import System.Random
+import           Expr
+import           System.Random
+import           Control.Monad.State
+import           Data.Text (Text)
 
-randomRMs :: (RandomGen g, Random a, Num a, Num n, Eq n) => a -> n -> g -> ([a], g)
-randomRMs _ 0 gen = ([], gen)
-randomRMs mod n gen = 
-  let (a, newGen) = randomR (-mod, mod) gen
-      (rest, lastGen) = randomRMs mod (n - 1) newGen 
-   in (a:rest, lastGen) 
+data ExprGenConfig = ExprGenConfig { getN :: Int
+                                   , getM :: Int } deriving (Show)
 
-randomLiterals :: (RandomGen g) => Int -> Int -> g -> ([Int], g)
-randomLiterals = randomRMs
+randomRMs :: (RandomGen g, Random m, Num m, Num n, Eq n) => n -> m -> State g [m]
+randomRMs 0 _ = return []
+randomRMs n mod = do
+  m <- state $ randomR (-mod, mod)
+  rest <- randomRMs (n - 1) mod 
+  return $ m:rest
 
-randomExpr :: (RandomGen g, Num a) => [a] -> g -> (Expr a, g)
-randomExpr [x] gen = (Val x, gen)
-randomExpr xs gen =
-  let (lh, gs) = randomR (1, length xs - 1) gen
-      (l, r) = splitAt lh xs
-      (le, gl) = randomExpr l gs
-      (re, gr) = randomExpr r gl
-   in (Expr le re, gr)
+randomLiterals :: (RandomGen g) => ExprGenConfig -> State g [Int]
+randomLiterals config = randomRMs (getN config) (getM config)
 
-randomOps :: (RandomGen g) => Int -> g -> ([Op], g)
-randomOps 0 gen = ([], gen)
-randomOps n gen =
-  let (op, newGen) = random gen
-      (rest, lastGen) = randomOps (n - 1) newGen
-   in (op:rest, lastGen)
+randomExpr :: (RandomGen g, Num a) => [a] -> State g (Expr a)
+randomExpr [x] = return $ Val x
+randomExpr xs = do
+  leftHeight <- state $ randomR (1, length xs - 1)
+  let (l, r) = splitAt leftHeight xs
+  le <- randomExpr l
+  re <- randomExpr r
+  return $ Expr le re
+
+randomOps :: (RandomGen g) => Int -> State g [Op]
+randomOps 0 = return []
+randomOps n = do
+  op <- state random
+  rest <- randomOps (n -1)
+  return $ op:rest
 
 succOpsUntil :: ([Op] -> Bool) -> [Op] -> [Op]
 succOpsUntil check ops 
   | check ops = ops
   | otherwise = succOpsUntil check (succOps ops)
 
-genExpr :: (RandomGen g) => Int -> Int -> g -> (String, g)
-genExpr k m gen =
-  let (ls, g1) = randomLiterals m k gen
-      (e, g2) = randomExpr ls g1
-      (ops, g3) = randomOps (k - 1) g2
-      n = realToFrac m
-      check ops = let res = eval e ops in res <=n && res >= -n
-      goodOps = succOpsUntil (check) ops
-   in (format e goodOps, g3) 
+genExpr :: (RandomGen g) => ExprGenConfig -> State g Text
+genExpr config = do
+  literals <- randomLiterals config
+  expr <- randomExpr literals
+  ops <- randomOps $ (getN config) - 1
+  let m = realToFrac $ getM config
+      check ops = let res = eval expr ops in res <= m && res >= -m
+      goodOps = succOpsUntil check ops
+  return $ format expr goodOps 

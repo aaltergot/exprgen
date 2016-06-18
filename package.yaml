@@ -27,4 +27,8 @@ library:
 
 dependencies:
   - base == 4.*
+  - mtl
   - random
+  - enclosed-exceptions
+  - monad-control
+  - text

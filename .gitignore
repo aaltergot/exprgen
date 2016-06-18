@@ -1,3 +1,4 @@
 *.swp
 *.cabal
 .stack-work/
+*.tags

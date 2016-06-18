@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Expr 
   ( Op (A, M, D)
   , succOps
@@ -7,7 +9,8 @@ module Expr
   , ef
   ) where
 
-import System.Random
+import           System.Random
+import           Data.Text (Text, pack, append)
 
 data Op = A -- Add
         | M -- Multiply
@@ -24,6 +27,9 @@ instance Random Op where
     let (i, newGen) = randomR (fromEnum a, fromEnum b) gen 
      in (toEnum i, newGen)
   random gen = randomR (minBound :: Op, maxBound :: Op) gen 
+
+(+++) :: Text -> Text -> Text
+(+++) = append
 
 succOps :: [Op] -> [Op]
 succOps [] = []
@@ -58,26 +64,26 @@ eval (Expr l r) (op:ops) =
   let (lops, rops) = splitAt (nodeCnt l) ops
    in opFun op (eval l lops) (eval r rops)
 
-format :: (Show a, Real a, Ord a) => Expr a -> [Op] -> String
-format (Val x) _ = show x
+format :: (Show a, Real a, Ord a) => Expr a -> [Op] -> Text
+format (Val x) _ = pack $ show x
 format e ops = formatInner A e ops
 
-formatInner :: (Show a, Real a) => Op -> Expr a -> [Op] -> String
+formatInner :: (Show a, Real a) => Op -> Expr a -> [Op] -> Text
 formatInner _ (Val x) _ = 
-  let s = show x 
-   in if x < 0 then "(" ++ s ++ ")" else s
+  let s = pack $ show x 
+   in if x < 0 then "(" +++ s +++ ")" else s
 formatInner pop (Expr l r) (op:ops) = 
   let (lops, rops) = splitAt (nodeCnt l) ops
       needP = (opPrec pop) < (opPrec op) 
-   in (if needP then "(" else "") ++ 
+   in (if needP then "(" else "") +++ 
      (case l of 
-       Val lv | lv < 0 && op == A -> show lv
+       Val lv | lv < 0 && op == A -> pack $ show lv
        _ -> formatInner op l lops
-     ) ++ 
+     ) +++ 
        (case r of
-          Val rv | rv < 0 && op == A -> show rv
-          _ -> show op ++ formatInner op r rops
-       ) ++ (if needP then ")" else "")
+          Val rv | rv < 0 && op == A -> pack $ show rv
+          _ -> (pack $ show op) +++ (formatInner op r rops)
+       ) +++ (if needP then ")" else "")
 
-ef :: (Show a, Real a, Real b, Fractional b) => Expr a -> [Op] -> (b, String)
+ef :: (Show a, Real a, Real b, Fractional b) => Expr a -> [Op] -> (b, Text)
 ef e ops = (eval e ops, format e ops)

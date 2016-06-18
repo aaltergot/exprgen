@@ -1,5 +1,4 @@
-
-import Expr
+import           App 
 
 main :: IO ()
-main = putStrLn "hello world"
+main = app

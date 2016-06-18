@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ExprSpec where
 
-import Expr
-import Test.Hspec
+import           Expr
+import           Test.Hspec
 
 eshow :: (Show a) => (Expr a, [Op]) -> String
 eshow (e, ops) = show e ++ " $ " ++ show ops
