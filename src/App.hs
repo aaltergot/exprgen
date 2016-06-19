@@ -180,8 +180,13 @@ app = do
         when verbose $ liftIO $ putStrLn $ "Generator: " ++ show gen
         return $ evalState (genExpr config) gen
       case result of 
-        Right expr -> putStrLn $ unpack expr
-        Left ex -> do hPutStrLn stderr $ unpack $ 
-                        translateException ex verbose ++? not verbose $
-                          "\nTry \"--verbose\" for more info."
-                      exitFailure
+        Right exprResult -> 
+          do when verbose $ putStrLn $ "Expression: " ++ show (getExpr exprResult)
+             when verbose $ putStrLn $ "Operations: " ++ show (getOps exprResult)
+             when verbose $ putStrLn $ "Value: " ++ show (getValue exprResult) ++ "\n"
+             putStrLn $ unpack $ getExprAsText exprResult
+        Left ex -> 
+          do hPutStrLn stderr $ unpack $ 
+               translateException ex verbose ++? not verbose $
+                 "\nTry \"--verbose\" for more info."
+             exitFailure

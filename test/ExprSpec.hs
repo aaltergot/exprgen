@@ -25,6 +25,7 @@ expr10 = (Expr (Expr (Val 5) (Val 6)) (Val 7), [M, A])
 expr11 =
   ( Expr (Expr (Val 5) (Val 13)) (Expr (Val (-2)) (Expr (Val 1) (Expr (Val 4) (Val (-3)))))
   , [D, A, A, M, A] )
+expr12 = (Expr (Val 1) (Expr (Val (-1)) (Val 1)), [A, A])
 
 spec :: Spec
 spec = do
@@ -92,3 +93,8 @@ spec = do
     let (e, ops) = expr11
     it "evaluated correctly" $ do (eval e ops) `shouldBe` (-18.0)
     it "formated correctly" $ do (format e ops) `shouldBe` "(5+13)/(-2+1*(4-3))"
+
+  describe ("Expr12: " ++ eshow expr12) $ do
+    let (e, ops) = expr12
+    it "evaluated correctly" $ do (eval e ops) `shouldBe` (1.0)
+    it "formated correctly" $ do (format e ops) `shouldBe` "1-1+1"

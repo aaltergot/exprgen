@@ -1,5 +1,6 @@
 module ExprGen 
   ( ExprGenConfig(..)
+  , ExprGenResult(..)
   , genExpr
   ) where
 
@@ -10,6 +11,12 @@ import           Data.Text (Text)
 
 data ExprGenConfig = ExprGenConfig { getN :: Int
                                    , getM :: Int } deriving (Show)
+
+data ExprGenResult a b = ExprGenResult { getExpr :: Expr a
+                                       , getExprAsText :: Text
+                                       , getOps :: [Op]
+                                       , getValue :: b
+                                       } deriving (Show)
 
 randomRMs :: (RandomGen g, Random m, Num m, Num n, Eq n) => n -> m -> State g [m]
 randomRMs 0 _ = return []
@@ -42,7 +49,8 @@ succOpsUntil check ops
   | check ops = ops
   | otherwise = succOpsUntil check (succOps ops)
 
-genExpr :: (RandomGen g) => ExprGenConfig -> State g Text
+genExpr :: (RandomGen g, Real b, Fractional b) 
+        => ExprGenConfig -> State g (ExprGenResult Int b)
 genExpr config = do
   literals <- randomLiterals config
   expr <- randomExpr literals
@@ -50,4 +58,4 @@ genExpr config = do
   let m = realToFrac $ getM config
       check ops = let res = eval expr ops in res <= m && res >= -m
       goodOps = succOpsUntil check ops
-  return $ format expr goodOps 
+  return $ ExprGenResult expr (format expr goodOps) goodOps (eval expr goodOps)

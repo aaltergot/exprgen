@@ -10,7 +10,7 @@ module Expr
   ) where
 
 import           System.Random
-import           Data.Text (Text, pack, append)
+import           Data.Text (Text, pack, append, isPrefixOf)
 
 data Op = A -- Add
         | M -- Multiply
@@ -76,14 +76,17 @@ formatInner pop (Expr l r) (op:ops) =
   let (lops, rops) = splitAt (nodeCnt l) ops
       needP = opPrec pop < opPrec op 
    in (if needP then "(" else "") +++ 
-     (case l of 
-       Val lv | lv < 0 && op == A -> pack $ show lv
-       _ -> formatInner op l lops
-     ) +++ 
-       (case r of
-          Val rv | rv < 0 && op == A -> pack $ show rv
-          _ -> pack (show op) +++ formatInner op r rops
-       ) +++ (if needP then ")" else "")
+      (case l of 
+        Val lv | lv < 0 && op == A -> pack $ show lv
+        _ -> formatInner op l lops
+      ) +++ 
+      (case r of
+         Val rv | rv < 0 && op == A -> pack $ show rv
+         --_ -> pack (show op) +++ formatInner op r rops
+         _ -> let re = formatInner op r rops
+               in if "-" `isPrefixOf` re then re else pack (show op) +++ re
+      ) +++
+      (if needP then ")" else "")
 
 ef :: (Show a, Real a, Real b, Fractional b) => Expr a -> [Op] -> (b, Text)
 ef e ops = (eval e ops, format e ops)

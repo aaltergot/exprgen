@@ -11,6 +11,6 @@ spec :: Spec
 spec = do
 
   describe "genExpr 10 20 (mkStdGen 1)" $ do 
-    let (s, g) = runState (genExpr $ ExprGenConfig 10 20) (mkStdGen 1) 
+    let res = evalState (genExpr $ ExprGenConfig 10 20) (mkStdGen 1) 
      in it "generates" $ do 
-      s `shouldBe` "(-4-4+3/(-4))/18*(-15)/(18*17/3-14)"
+      getExprAsText res `shouldBe` "(-4-4+3/(-4))/18*(-15)/(18*17/3-14)"
