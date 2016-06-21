@@ -181,9 +181,10 @@ app = do
         return $ evalState (genExpr config) gen
       case result of 
         Right exprResult -> 
-          do when verbose $ putStrLn $ "Expression: " ++ show (getExpr exprResult)
-             when verbose $ putStrLn $ "Operations: " ++ show (getOps exprResult)
-             when verbose $ putStrLn $ "Value: " ++ show (getValue exprResult) ++ "\n"
+          do when verbose $ putStrLn $ 
+              "Expression: " ++ show (getExpr exprResult) ++
+              "\nOperations: " ++ show (getOps exprResult) ++
+               "\nValue: " ++ show (getValue exprResult) ++ "\n"
              putStrLn $ unpack $ getExprAsText exprResult
         Left ex -> 
           do hPutStrLn stderr $ unpack $ 
