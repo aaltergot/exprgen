@@ -3,21 +3,25 @@
 
 module App (app) where
 
-import           ExprGen
-import           System.Environment (getArgs)
-import           System.Console.GetOpt
-import           System.Exit
-import           System.Random
-import qualified System.IO as IO (withFile)
-import           System.IO hiding (withFile)
+import           Control.Exception.Enclosed
 import           Control.Monad
 import           Control.Monad.Except
-import           Control.Exception.Enclosed
-import           Data.Text (Text, pack, unpack, append)
 import           Control.Monad.State
-import           Text.Read (readEither)
+import           Data.Monoid                ((<>))
+import           Data.Text                  (Text, pack, unpack)
+import qualified Data.Text.IO               as T (hPutStrLn, putStrLn)
+import           ExprGen
+import           System.Console.GetOpt
+import           System.Environment         (getArgs)
+import           System.Exit
+import           System.IO                  (Handle, IOMode (ReadMode),
+                                             hGetLine, hPutStrLn, putStrLn,
+                                             stderr, withFile)
 
-data Exception = Exception Text 
+import           System.Random
+import           Text.Read                  (readEither)
+
+data Exception = Exception Text
                | ConfigReadException Text
                | ConfigParseException Text
                | NumArgNotFound
@@ -34,14 +38,14 @@ instance Throwable String where throw = throwError . Exception . pack
 asText :: Show a => a -> Text
 asText = pack . show
 
-(+++) :: Text -> Text -> Text
-(+++) = append
-
 --conditional append
-(++?) :: Text -> Bool -> Text -> Text
-(++?) t b r = t +++ if b then r else ""
+(<>?) :: Monoid m => m -> Bool -> m -> m
+(<>?) t b r = if b then t <> r else t
 
-rethrowBaseExceptionAs :: Monad m => (Text -> Exception) -> Exception -> ExceptT Exception m a
+rethrowBaseExceptionAs :: Monad m
+                       => (Text -> Exception)
+                       -> Exception
+                       -> ExceptT Exception m a
 rethrowBaseExceptionAs f (Exception msg) = throwError $ f msg
 rethrowBaseExceptionAs _ e = throwError e
 
@@ -66,43 +70,43 @@ usageHeader = "Usage: exprgen --file=/path/to/file [--seed=<S>]\n" ++
               "   or: exprgen --num=<N> --mod=<M> [--seed=<S>]\n\n" ++
               "Notes: <N>,<M> - integers above zero; <S> - arbitrary integer\n" ++
               "       \"--file\" option has precedence over \"--num\"+\"--mod\"\n" ++
-              "       Input file contains <N> on first line, <M> on second\n" 
+              "       Input file contains <N> on first line, <M> on second\n"
 
 usagePage :: String
 usagePage = usageInfo usageHeader flags
 
 translateException :: Exception -> Bool -> Text
 translateException (Exception msg) _ =
-  "Execution failure: " +++ msg
+  "Execution failure: " <> msg
 translateException (ConfigReadException msg) v =
-  "Unable to read input file." ++? v $ msg
+  "Unable to read input file." <>? v $ msg
 translateException (ConfigParseException msg) v =
-  "Incorrect input file. See \"--help\" page." ++? v $ asReason msg
-translateException NumArgNotFound _ = 
+  "Incorrect input file. See \"--help\" page." <>? v $ asReason msg
+translateException NumArgNotFound _ =
   "\"--num\" is required"
-translateException (MalformedNum msg) v = 
-  "Malformed argument for option \"--num\"" ++? v $ asReason msg
-translateException ModArgNotFound _  = 
+translateException (MalformedNum msg) v =
+  "Malformed argument for option \"--num\"" <>? v $ asReason msg
+translateException ModArgNotFound _  =
   "\"--mod\" is required"
 translateException (MalformedMod msg) v =
-  "Malformed argument for option \"--mod\"" ++? v $ asReason msg
+  "Malformed argument for option \"--mod\"" <>? v $ asReason msg
 translateException (MalformedSeed msg) v =
-  "Malformed argument for option \"--seed\"" ++? v $ asReason msg
+  "Malformed argument for option \"--seed\"" <>? v $ asReason msg
 
 asReason :: Text -> Text
-asReason = append "\nReason: "
+asReason = (<>) "\nReason: "
 
-withFile :: FilePath 
-         -> IOMode 
-         -> (Handle -> ExceptT Exception IO r) 
+tryWithFile :: FilePath
+         -> IOMode
+         -> (Handle -> ExceptT Exception IO r)
          -> ExceptT Exception IO r
-withFile path mode h =
-  catchAny 
-    (ExceptT $ IO.withFile path mode $ \h1 -> runExceptT $  h h1) 
+tryWithFile path mode h =
+  catchAny
+    (ExceptT $ withFile path mode $ \h1 -> runExceptT $  h h1)
     (throw . asText)
 
 readInt :: String -> Except Exception Int
-readInt s = case readEither s of 
+readInt s = case readEither s of
               Left msg -> throw msg
               Right i -> return i
 
@@ -123,9 +127,9 @@ makeConfig nStr mStr = do
 
 readConfigFile :: FilePath -> ExceptT Exception IO ExprGenConfig
 readConfigFile path = flip catchError (rethrowBaseExceptionAs ConfigReadException) $
-  withFile path ReadMode $ \h -> do
-    (nStr:mStr:_) <- catchAny 
-      (liftIO $ sequence $ [hGetLine, hGetLine] <*> [h]) 
+  tryWithFile path ReadMode $ \h -> do
+    (nStr:mStr:_) <- catchAny
+      (liftIO $ sequence $ [hGetLine, hGetLine] <*> [h])
       (throwError . ConfigParseException . pack . show)
     ExceptT $ return $ runExcept $ makeConfig nStr mStr
 
@@ -153,7 +157,7 @@ extractConfig :: [Flag] -> Except Exception ExprGenConfig
 extractConfig fs = do
   n <- lookupNum fs
   m <- lookupMod fs
-  return $ ExprGenConfig n m 
+  return $ ExprGenConfig n m
 
 exceptIO :: Except e a -> ExceptT e IO a
 exceptIO = ExceptT . return . runExcept
@@ -170,24 +174,24 @@ app = do
       let verbose = Verbose `elem` args
       unless (null values) (putStrLn $ "Unrecognized arguments: " ++ show values)
       result <- runExceptT $ do
-        config <- 
+        config <-
           case lookupFilePath args of
-            Just path -> do 
+            Just path -> do
               liftIO $ putStrLn $ "Reading input file: " ++ path
               readConfigFile path
             Nothing -> exceptIO $ extractConfig args
         gen <- fmap mkStdGen <$> exceptIO (lookupSeed args) >>= (liftIO . maybe newStdGen return)
         when verbose $ liftIO $ putStrLn $ "Generator: " ++ show gen
         return $ evalState (genExpr config) gen
-      case result of 
-        Right exprResult -> 
-          do when verbose $ putStrLn $ 
+      case result of
+        Right exprResult ->
+          do when verbose $ putStrLn $
               "Expression: " ++ show (getExpr exprResult) ++
               "\nOperations: " ++ show (getOps exprResult) ++
-               "\nValue: " ++ show (getValue exprResult) ++ "\n"
-             putStrLn $ unpack $ getExprAsText exprResult
-        Left ex -> 
-          do hPutStrLn stderr $ unpack $ 
-               translateException ex verbose ++? not verbose $
+              "\nValue: " ++ show (getValue exprResult) ++ "\n"
+             T.putStrLn $ getExprAsText exprResult
+        Left ex ->
+          do T.hPutStrLn stderr $
+               translateException ex verbose <>? not verbose $
                  "\nTry \"--verbose\" for more info."
              exitFailure

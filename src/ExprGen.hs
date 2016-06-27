@@ -1,28 +1,28 @@
-module ExprGen 
+module ExprGen
   ( ExprGenConfig(..)
   , ExprGenResult(..)
   , genExpr
   ) where
 
+import           Control.Monad.State
+import           Data.Text           (Text)
 import           Expr
 import           System.Random
-import           Control.Monad.State
-import           Data.Text (Text)
 
 data ExprGenConfig = ExprGenConfig { getN :: Int
                                    , getM :: Int } deriving (Show)
 
-data ExprGenResult a b = ExprGenResult { getExpr :: Expr a
+data ExprGenResult a b = ExprGenResult { getExpr       :: Expr a
                                        , getExprAsText :: Text
-                                       , getOps :: [Op]
-                                       , getValue :: b
+                                       , getOps        :: [Op]
+                                       , getValue      :: b
                                        } deriving (Show)
 
 randomRMs :: (RandomGen g, Random m, Num m, Num n, Eq n) => n -> m -> State g [m]
 randomRMs 0 _ = return []
 randomRMs n mod = do
   m <- state $ randomR (-mod, mod)
-  rest <- randomRMs (n - 1) mod 
+  rest <- randomRMs (n - 1) mod
   return $ m:rest
 
 randomLiterals :: (RandomGen g) => ExprGenConfig -> State g [Int]
@@ -45,11 +45,11 @@ randomOps n = do
   return $ op:rest
 
 succOpsUntil :: ([Op] -> Bool) -> [Op] -> [Op]
-succOpsUntil check ops 
+succOpsUntil check ops
   | check ops = ops
   | otherwise = succOpsUntil check (succOps ops)
 
-genExpr :: (RandomGen g, Real b, Fractional b) 
+genExpr :: (RandomGen g, Real b, Fractional b)
         => ExprGenConfig -> State g (ExprGenResult Int b)
 genExpr config = do
   literals <- randomLiterals config
