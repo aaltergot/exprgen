@@ -2,3 +2,7 @@
 *.cabal
 .stack-work/
 *.tags
+*.iml
+.idea
+out
+lib
