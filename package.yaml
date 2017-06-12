@@ -1,7 +1,9 @@
 name: exprgen
-version: 0.1.0
+version: 0.1.0.0
+author: Alexander Altergot <avaltergot@gmail.com>
 maintainer: Alexander Altergot <avaltergot@gmail.com>
-license: OtherLicense 
+license: MIT
+license-file: LICENSE
 github: aaltergot/exprgen
 
 tests:
@@ -15,9 +17,9 @@ tests:
 
 executables:
   exprgen:
-    main: exprgen.hs
+    main: Main.hs
     source-dirs:
-      - exe
+      - app
     dependencies:
       - exprgen
 
@@ -27,8 +29,11 @@ library:
 
 dependencies:
   - base == 4.*
-  - mtl
-  - random
-  - enclosed-exceptions
+  - MonadRandom
   - monad-control
+  - mtl
+  - optparse-applicative
+  - random
+  - safe-exceptions
   - text
+  - template-haskell
