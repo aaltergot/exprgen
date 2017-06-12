@@ -12,6 +12,7 @@ import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Options.Applicative hiding (str, value)
 import Text.Read (readEither)
+import System.Exit (exitFailure)
 import System.IO (IOMode (ReadMode), hGetLine, hPutStrLn, stderr, withFile)
 import System.Random (newStdGen, mkStdGen)
 
@@ -129,6 +130,7 @@ appOptsInfo = info (appOptsParser <**> helper)
   <> header [str|Generate random arithmetic expression, that have <N> literals, each literal is
 integer and does not exceed <M> in absolute value. Expression evaluation result should not exceed
 <M> in absolute value as well.|]
+  <> failureCode 1
   )
 
 
@@ -153,4 +155,6 @@ main = do
     putStrLn $ unpack formatted
   where
     exceptionHandler :: SomeException -> IO ()
-    exceptionHandler e = hPutStrLn stderr (displayException e)
+    exceptionHandler e = do
+      hPutStrLn stderr (displayException e)
+      exitFailure
