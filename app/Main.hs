@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 import Control.Exception (Exception, displayException)
@@ -16,7 +15,6 @@ import System.Exit (exitFailure)
 import System.IO (IOMode (ReadMode), hGetLine, hPutStrLn, stderr, withFile)
 import System.Random (newStdGen, mkStdGen)
 
-import ExprGen.Util (str)
 import ExprGen.Expr (ExprException(..))
 import ExprGen.Gen (Config(..), Result(..), generateExpr)
 
@@ -68,8 +66,8 @@ readInputFile path = do
 
 data AppOpts = AppOpts
  { configOpts :: ConfigOpts
- , verbose :: Bool
  , seed :: Maybe Int
+ , verbose :: Bool
  } deriving (Show)
 
 data ConfigOpts =
@@ -83,7 +81,7 @@ toReaderM f = eitherReader $ \s -> case runExcept (f s) of
   Right v -> Right v
 
 appOptsParser :: Parser AppOpts
-appOptsParser = AppOpts <$> configOptsParser <*> verboseParser <*> seedParser
+appOptsParser = AppOpts <$> configOptsParser <*> seedParser <*> verboseParser
   where
     configOptsParser :: Parser ConfigOpts
     configOptsParser = cliConfigParser <|> inputFileParser
@@ -111,9 +109,6 @@ appOptsParser = AppOpts <$> configOptsParser <*> verboseParser <*> seedParser
       <> help "Input file path"
       )
 
-    verboseParser :: Parser Bool
-    verboseParser = switch (long "verbose" <> short 'v' <> help "Verbose output")
-
     seedParser :: Parser (Maybe Int)
     seedParser = optional $ option (toReaderM readSeed)
       ( long "seed"
@@ -122,14 +117,21 @@ appOptsParser = AppOpts <$> configOptsParser <*> verboseParser <*> seedParser
       <> help "Random generator seed"
       )
 
+    verboseParser :: Parser Bool
+    verboseParser = switch (long "verbose" <> short 'v' <> help "Verbose output")
+
 appOptsInfo :: ParserInfo AppOpts
 appOptsInfo = info (appOptsParser <**> helper)
   ( fullDesc
-  <> progDesc [str|<N>,<M> - integers above zero; <S> - arbitrary integer;
-<FILE> contains <N> on first line, <M> on second.|]
-  <> header [str|Generate random arithmetic expression, that have <N> literals, each literal is
-integer and does not exceed <M> in absolute value. Expression evaluation result should not exceed
-<M> in absolute value as well.|]
+  <> progDesc
+    ( "<N>,<M> - integers above zero; <S> - arbitrary integer; "
+    <> "<FILE> contains <N> on first line, <M> on second."
+    )
+  <> header
+    ( "Generate random arithmetic expression, that have <N> literals, each literal is "
+    <> "integer and does not exceed <M> in absolute value. Expression evaluation result "
+    <> "should not exceed <M> in absolute value as well."
+    )
   <> failureCode 1
   )
 

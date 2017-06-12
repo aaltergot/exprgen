@@ -14,8 +14,6 @@ import Data.Monoid ((<>))
 import Data.Text (Text, isPrefixOf, pack)
 import System.Random (Random, random, randomR)
 
-import ExprGen.Util (asText)
-
 data ExprException = InvalidOperationsList
   deriving (Show, Eq)
 
@@ -62,6 +60,9 @@ nodeCnt :: Expr a -> Int
 nodeCnt (Expr l r)  = 1 + nodeCnt l + nodeCnt r
 nodeCnt _ = 0
 
+asText :: Show a => a -> Text
+asText = pack . show
+
 eval :: (Real a, MonadError ExprException m)
      => Expr a -> [Op] -> m Double
 eval (Val x) _ = return $ realToFrac x
@@ -94,6 +95,6 @@ formatInner pop (Expr l r) (op:ops) = do
     Val rv | rv < 0 && op == A -> return $ asText rv
     _ -> do
       re <- formatInner op r rops
-      if "-" `isPrefixOf` re then return re else return $ pack (show op) <> re
+      if "-" `isPrefixOf` re then return re else return $ asText op <> re
   return $ (if needP then "(" else "") <> left <> right <> (if needP then ")" else "")
 formatInner _ (Expr _ _) [] = throwError InvalidOperationsList
